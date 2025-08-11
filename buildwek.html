@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Digital Time Capsule — Personal</title>
+    <style>
+        :root {
+            --bg: #f4f6f8;
+            --card: #fff;
+            --muted: #6b7280;
+            --accent: #3b82f6;
+            --danger: #ef4444
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b1220;
+            --card: #071024;
+            --muted: #9aa4b2;
+            --accent: #60a5fa
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Inter, ui-sans-serif, system-ui, Arial
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, var(--bg), #e9eef6);
+            min-height: 100vh;
+            color: #0f1724
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            background: transparent
+        }
+
+        .logo {
+            font-weight: 700;
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 18px auto;
+            padding: 18px
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(12, 18, 31, 0.06);
+            margin-bottom: 14px
+        }
+
+        /* auth */
+        .auth-forms {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        form {
+            min-width: 260px;
+            flex: 1
+        }
+
+        label {
+            display: block;
+            margin: 8px 0 6px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e6eef6;
+            background: transparent
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 0;
+            cursor: pointer
+        }
+
+        /* layout */
+        .grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 14px
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 16px;
+            height: calc(100vh - 80px);
+            overflow: auto
+        }
+
+        .capsules-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .capsule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px dashed #e6eef6
+        }
+
+        .meta {
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        /* create form */
+        .row {
+            display: flex;
+            gap: 10px
+        }
+
+        .small {
+            flex: 0 0 140px
+        }
+
+        /* dashboard cards */
+        .progress {
+            height: 10px;
+            background: #e6eef6;
+            border-radius: 999px;
+            overflow: hidden
+        }
+
+        .progress>i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #7dd3fc)
+        }
+
+        /* gallery */
+        .gallery {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .gallery img,
+        .gallery video {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px
+        }
+
+        /* mobile */
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            .sidebar {
+                position: relative;
+                height: auto
+            }
+        }
+
+        .notice {
+            padding: 10px;
+            border-radius: 8px;
+            background: #fffbea;
+            border: 1px solid #ffecb5;
+            color: #7c5a00
+        }
+
+        .pill {
+            background: #eef2ff;
+            color: #3730a3;
+            padding: 6px 8px;
+            border-radius: 20px;
+            font-size: 12px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .flex {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .link {
+            color: var(--accent);
+            cursor: pointer
+        }
+
+        .small-btn {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid #e6eef6;
+            background: transparent;
+            cursor: pointer
+        }
+    </style>
+</head>
+
+<body data-theme="light">
+    <header>
+        <div class="logo">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="18" height="18" rx="4" fill="var(--accent)" />
+            </svg>
+            <div>
+                <div>DigitalTimeCapsule</div>
+                <div style="font-size:12px;color:var(--muted)">Preserve memories for the future</div>
+            </div>
+        </div>
+        <div class="flex">
+            <button id="themeToggle" class="small-btn">Toggle Dark</button>
+            <div id="authArea"></div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="appRoot">
+            <!-- Auth/Card area inserted by JS -->
+        </div>
+    </main>
+
+    <script>
+        /***********************
+          Simple single-file Time Capsule app
+          - Stores everything in localStorage
+          - Features: auth, create capsules, unlock date, lock, reminders, recipients, secret messages, themes, milestones,
+            shareable links (simulated), scheduled messages (simulated), AI prompt helper (local), progress tracker, dark mode
+        ***********************/
+
+        const store = {
+            get(key) { try { return JSON.parse(localStorage.getItem(key)) } catch (e) { return null } },
+            set(key, val) { localStorage.setItem(key, JSON.stringify(val)) },
+            remove(key) { localStorage.removeItem(key) }
+        }
+
+        // initialize storage
+        if (!store.get('dtc_users')) store.set('dtc_users', {});
+        if (!store.get('dtc_capsules')) store.set('dtc_capsules', {});
+        if (!store.get('dtc_shares')) store.set('dtc_shares', {});
+
+        // utilities
+        function uid(prefix = 'id') { return prefix + Math.random().toString(36).slice(2, 9) }
+        function todayISO() { return new Date().toISOString().slice(0, 10) }
+        function fmtDate(d) { return new Date(d).toLocaleString() }
+        function daysUntil(d) { const ms = new Date(d) - new Date(); return Math.ceil(ms / 86400000) }
+
+        // simple "hash" (not secure) for demo
+        function hash(s) { return btoa(unescape(encodeURIComponent(s))).slice(0, 12) }
+
+        // Auth
+        let currentUser = store.get('dtc_currentUser') || null;
+        function saveCurrent() { store.set('dtc_currentUser', currentUser) }
+
+        const appRoot = document.getElementById('appRoot');
+        const authArea = document.getElementById('authArea');
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        // theme
+        let theme = localStorage.getItem('dtc_theme') || 'light';
+        body.setAttribute('data-theme', theme);
+        themeToggle.addEventListener('click', () => {
+            theme = (theme === 'light') ? 'dark' : 'light'; body.setAttribute('data-theme', theme); localStorage.setItem('dtc_theme', theme);
+        })
+
+        // render auth header
+        function renderAuthHeader() {
+            authArea.innerHTML = '';
+            if (currentUser) {
+                const el = document.createElement('div'); el.className = 'flex';
+                el.innerHTML = `<div style="text-align:right"><div style="font-weight:600">${currentUser.name || currentUser.email}</div><div class="muted" style="font-size:12px">${currentUser.email}</div></div>`;
+                const btn = document.createElement('button'); btn.className = 'small-btn'; btn.textContent = 'Logout';
+                btn.addEventListener('click', () => { currentUser = null; saveCurrent(); renderApp(); });
+                el.appendChild(btn); authArea.appendChild(el);
+            } else {
+                const btn = document.createElement('button'); btn.className = 'small-btn'; btn.textContent = 'Login / Sign up';
+                btn.addEventListener('click', () => renderAuthForms()); authArea.appendChild(btn);
+            }
+        }
+
+        // AUTH FORM
+        function renderAuthForms() {
+            appRoot.innerHTML = '';
+            const card = document.createElement('div'); card.className = 'card';
+            card.innerHTML = `<h3>Welcome — Sign up or Log in</h3><div class="auth-forms"></div>`;
+            const forms = card.querySelector('.auth-forms');
+
+            const signUp = document.createElement('form'); signUp.innerHTML = `
+      <h4>Create account</h4>
+      <label>Email</label><input required name="email" type="email" />
+      <label>Name</label><input name="name" />
+      <label>Password</label><input required name="password" type="password" />
+      <label>Confirm password</label><input required name="confirm" type="password" />
+      <div style="margin-top:8px"><button type="submit">Sign up</button></div>`;
+            signUp.addEventListener('submit', (e) => { e.preventDefault(); const f = new FormData(signUp); signup(f.get('email'), f.get('password'), f.get('name'), f.get('confirm')) });
+
+            const login = document.createElement('form'); login.innerHTML = `
+      <h4>Login</h4>
+      <label>Email</label><input required name="email" type="email" />
+      <label>Password</label><input required name="password" type="password" />
+      <div style="margin-top:8px;display:flex;gap:8px"><button type="submit">Login</button><button id="forgotBtn" type="button" class="small-btn">Forgot?</button></div>`;
+            login.addEventListener('submit', (e) => { e.preventDefault(); const f = new FormData(login); loginUser(f.get('email'), f.get('password')) });
+            login.querySelector('#forgotBtn').addEventListener('click', () => { const e = prompt('Enter your registered email to reset password (demo):'); if (!e) return; forgotPassword(e) });
+
+            forms.appendChild(signUp); forms.appendChild(login);
+            appRoot.appendChild(card);
+        }
+
+        function signup(email, password, name, confirm) {
+            if (!email || !password) return alert('email and password required');
+            if (password !== confirm) return alert('passwords do not match');
+            const users = store.get('dtc_users') || {};
+            if (users[email]) return alert('user exists — login');
+            users[email] = { email, name, password: hash(password), id: uid('u_'), created: Date.now() };
+            store.set('dtc_users', users); currentUser = { email, name, id: users[email].id }; saveCurrent(); renderApp();
+        }
+        function loginUser(email, password) {
+            const users = store.get('dtc_users') || {}; if (!users[email]) return alert('no account');
+            if (users[email].password !== hash(password)) return alert('wrong password');
+            currentUser = { email, name: users[email].name, id: users[email].id }; saveCurrent(); renderApp();
+        }
+        function forgotPassword(email) {
+            const users = store.get('dtc_users') || {}; if (!users[email]) return alert('no such account');
+            const newp = prompt('Enter a new password for demo (this simulates password reset):'); if (!newp) return; users[email].password = hash(newp); store.set('dtc_users', users); alert('password reset — please login');
+        }
+
+        // main app
+        function renderApp() {
+            renderAuthHeader();
+            if (!currentUser) { renderAuthForms(); return; }
+
+            appRoot.innerHTML = '';
+            const grid = document.createElement('div'); grid.className = 'grid';
+            const sidebar = document.createElement('aside'); sidebar.className = 'sidebar';
+            const main = document.createElement('section');
+
+            // sidebar: create capsule + quick actions)
+            const createCard = document.createElement('div'); createCard.className = 'card';
+            createCard.innerHTML = `
+      <h3>Create time capsule</h3>
+      <form id="createForm">
+        <label>Title</label><input name="title" required />
+        <label>Short description</label><input name="desc" />
+        <label>Unlock date</label><input name="unlock" type="date" required min="${todayISO()}" />
+        <label>Theme</label>
+        <select name="theme"><option value="nostalgic">Nostalgic</option><option value="futuristic">Futuristic</option><option value="playful">Playful</option></select>
+        <label>Secret message (hidden until unlocked)</label><textarea name="secret"></textarea>
+        <label>Recipients (comma-separated emails)</label><input name="recipients" placeholder="friend@example.com" />
+        <label>Milestones (comma-separated short labels)</label><input name="milestones" placeholder="Graduation, Baby born" />
+        <label>Upload images/videos (optional)</label>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*" />
+        <div style="margin-top:8px;display:flex;gap:8px"><button>Create & Lock</button><button id="aiHelp" type="button" class="small-btn">AI Prompt</button></div>
+      </form>
+      <div style="margin-top:10px" id="aiPanel" class="muted" hidden>
+        <label>AI Suggestions</label>
+        <div id="aiSuggest"></div>
+      </div>
+    `;
+            createCard.querySelector('#aiHelp').addEventListener('click', () => {
+                const panel = createCard.querySelector('#aiPanel'); panel.hidden = false; const sug = createCard.querySelector('#aiSuggest'); sug.innerHTML = ''; const t = createCard.querySelector('[name=title]').value || 'Today';
+                const suggestions = generateAISuggestions(t);
+                suggestions.forEach(s => { const b = document.createElement('div'); b.style.margin = '6px 0'; b.innerHTML = `<div class="pill">${s.title}</div><div style="margin-top:6px">${s.text}</div><div style="margin-top:6px"><button class="small-btn" data-sn="${s.text}">Use</button></div>`; sug.appendChild(b); b.querySelector('button').addEventListener('click', (e) => { createCard.querySelector('[name=secret]').value = s.text }) });
+            })
+
+            createCard.querySelector('#createForm').addEventListener('submit', async (e) => {
+                e.preventDefault(); const f = new FormData(createCard.querySelector('#createForm'));
+                const files = createCard.querySelector('#fileInput').files; const media = [];
+                for (const file of files) { media.push(await fileToDataURL(file)); }
+                const obj = {
+                    id: uid('caps_'), owner: currentUser.id, title: f.get('title'), desc: f.get('desc'), unlock: f.get('unlock'), theme: f.get('theme'), secret: f.get('secret'), recipients: (f.get('recipients') || '').split(',').map(s => s.trim()).filter(Boolean), milestones: (f.get('milestones') || '').split(',').map(s => s.trim()).filter(Boolean), media, created: Date.now(), locked: true, progress: 0, scheduled: []
+                };
+                const caps = store.get('dtc_capsules') || {}; caps[obj.id] = obj; store.set('dtc_capsules', caps);
+                alert('Capsule created and locked! You can add scheduled messages from dashboard.'); renderApp();
+            })
+
+            sidebar.appendChild(createCard);
+
+            // quick actions and reminders
+            const remindCard = document.createElement('div'); remindCard.className = 'card'; remindCard.innerHTML = `<h4>Reminders & quick links</h4><div id="remList" class="muted"></div><div style="margin-top:10px"><button id="exportBtn" class="small-btn">Export my capsules (JSON)</button> <button id="importBtn" class="small-btn">Import JSON</button></div>`;
+            remindCard.querySelector('#exportBtn').addEventListener('click', () => { const caps = store.get('dtc_capsules') || {}; const mine = Object.values(caps).filter(c => c.owner === currentUser.id); const blob = new Blob([JSON.stringify(mine, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'dtc_capsules_export.json'; a.click(); URL.revokeObjectURL(url); });
+            remindCard.querySelector('#importBtn').addEventListener('click', () => { const t = prompt('Paste JSON array of capsules to import:'); if (!t) return; try { const arr = JSON.parse(t); const caps = store.get('dtc_capsules') || {}; arr.forEach(c => { c.id = uid('caps_'); c.owner = currentUser.id; caps[c.id] = c }); store.set('dtc_capsules', caps); alert('imported'); renderApp(); } catch (e) { alert('invalid json') }; });
+            sidebar.appendChild(remindCard);
+
+            // main: dashboard
+            const dashCard = document.createElement('div'); dashCard.className = 'card'; dashCard.innerHTML = `<h3>Dashboard</h3><div id="progressList"></div><div style="margin-top:12px" id="capsList"></div>`;
+
+            main.appendChild(dashCard);
+
+            grid.appendChild(sidebar); grid.appendChild(main); appRoot.appendChild(grid);
+
+            // populate reminders and list
+            renderCapsulesInDashboard(dashCard.querySelector('#capsList'), dashCard.querySelector('#progressList'));
+            renderReminders(remindCard.querySelector('#remList'));
+
+            // listen for share tokens in URL
+            checkShareParam();
+
+            // periodic scheduled message checker (runs in-page; for real delivery require backend)
+            setInterval(checkScheduledMessages, 15000);
+        }
+
+        // AI suggestions (local templates)
+        function generateAISuggestions(title) {
+            const templates = [
+                { title: '5-year prediction', text: `In five years I hope to be... Describe where you work, what you learned, and one big dream.` },
+                { title: 'A letter to future me', text: `Dear Future Me, I am writing this on ${new Date().toLocaleDateString()}. Right now I'm feeling...` },
+                { title: 'Snapshot of today', text: `Today's a typical day because... Mention who you saw, what you ate, what made you laugh.` },
+                { title: 'Advice for future self', text: `If you are reading this, remember the lessons: 1) Stay curious. 2) Call your family. 3) Keep learning.` }
+            ]; return templates;
+        }
+
+        // render reminders
+        function renderReminders(container) {
+            const caps = store.get('dtc_capsules') || {}; const mine = Object.values(caps).filter(c => c.owner === currentUser.id);
+            container.innerHTML = '';
+            const soon = mine.filter(c => daysUntil(c.unlock) <= 7 && daysUntil(c.unlock) >= 0);
+            if (soon.length === 0) container.innerHTML = '<div class="muted">No upcoming unlocks in the next 7 days.</div>';
+            soon.forEach(c => { const d = document.createElement('div'); d.className = 'notice'; d.innerHTML = `<strong>${c.title}</strong> unlocks in ${daysUntil(c.unlock)} day(s) on ${c.unlock}.`; container.appendChild(d) });
+        }
+
+        // list capsules
+        function renderCapsulesInDashboard(listEl, progressEl) {
+            const caps = store.get('dtc_capsules') || {}; const mine = Object.values(caps).filter(c => c.owner === currentUser.id).sort((a, b) => new Date(a.unlock) - new Date(b.unlock));
+            progressEl.innerHTML = ''; listEl.innerHTML = '';
+            if (mine.length === 0) { listEl.innerHTML = '<div class="muted">No capsules yet — create one!</div>'; return; }
+            mine.forEach(c => {
+                const item = document.createElement('div'); item.className = 'card';
+                const unlocked = new Date() >= new Date(c.unlock + 'T23:59:59');
+                item.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:600">${c.title}</div>
+            <div class="muted" style="font-size:13px">Unlock: ${c.unlock} · ${c.desc || ''}</div>
+            <div style="margin-top:8px" class="gallery"></div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">${unlocked ? '<strong>Unlocked</strong>' : 'Locked'}</div>
+            <div style="margin-top:8px" class="meta">${daysUntil(c.unlock)} day(s) left</div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              <button data-id="${c.id}" class="small-btn viewBtn">View</button>
+              <button data-id="${c.id}" class="small-btn shareBtn">Share</button>
+              <button data-id="${c.id}" class="small-btn editBtn">Add scheduled</button>
+            </div>
+          </div>
+        </div>
+      `;
+                // media
+                const gallery = item.querySelector('.gallery'); (c.media || []).forEach(m => { if (m.startsWith('data:video')) { const v = document.createElement('video'); v.src = m; v.controls = true; gallery.appendChild(v); } else { const im = document.createElement('img'); im.src = m; gallery.appendChild(im); } });
+
+                // view
+                item.querySelector('.viewBtn').addEventListener('click', () => openCapsuleModal(c.id));
+                item.querySelector('.shareBtn').addEventListener('click', () => createShareFor(c.id));
+                item.querySelector('.editBtn').addEventListener('click', () => openScheduledEditor(c.id));
+
+                listEl.appendChild(item);
+
+                // progress bar
+                const totalDays = (new Date(c.unlock) - new Date(c.created)) / 86400000; const elapsed = (Date.now() - new Date(c.created)) / 86400000; const pct = Math.max(0, Math.min(100, Math.round((elapsed / totalDays) * 100) || 0));
+                const pcard = document.createElement('div'); pcard.className = 'card'; pcard.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${c.title}</strong><div class="muted">Unlocks ${c.unlock}</div></div><div style="text-align:right">${pct}%</div></div><div style="margin-top:8px" class="progress"><i style="width:${pct}%"></i></div>`;
+                progressEl.appendChild(pcard);
+            })
+        }
+
+        // open capsule modal
+        function openCapsuleModal(idOrToken) {
+            const caps = store.get('dtc_capsules') || {}; let cap = caps[idOrToken];
+            if (!cap) { // maybe token
+                const shares = store.get('dtc_shares') || {}; const s = shares[idOrToken]; if (s && new Date(s.expires) > new Date()) { cap = caps[s.capsuleId]; } else { alert('Share link invalid or expired'); return; }
+            }
+            const unlocked = new Date() >= new Date(cap.unlock + 'T23:59:59');
+            // modal
+            const modal = document.createElement('div'); modal.style.position = 'fixed'; modal.style.left = 0; modal.style.top = 0; modal.style.right = 0; modal.style.bottom = 0; modal.style.background = 'rgba(2,6,23,0.6)'; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center'; modal.style.zIndex = 9999;
+            const box = document.createElement('div'); box.style.width = '90%'; box.style.maxWidth = '900px'; box.className = 'card'; box.innerHTML = `<div style="display:flex;justify-content:space-between"><div><h3>${cap.title}</h3><div class="muted">Unlock: ${cap.unlock}</div></div><div><button id="closeModal" class="small-btn">Close</button></div></div><div style="margin-top:10px">${cap.desc || ''}</div><div id="modalBody" style="margin-top:12px"></div>`;
+            if (!unlocked) { box.querySelector('#modalBody').innerHTML = `<div class="muted">This capsule is locked until <strong>${cap.unlock}</strong>.</div><div style="margin-top:10px">${cap.milestones && cap.milestones.length ? '<strong>Milestones:</strong> ' + cap.milestones.join(', ') : ''}</div>`; } else {
+                // show contents
+                let bodyHtml = '';
+                if (cap.media && cap.media.length) { bodyHtml += `<div class="gallery">${cap.media.map(m => m.startsWith('data:video') ? `<video controls src="${m}"></video>` : `<img src="${m}" />`).join('')}</div>` }
+                if (cap.secret) bodyHtml += `<div style="margin-top:12px"><h4>Secret Message</h4><div class="card">${escapeHtml(cap.secret)}</div></div>`;
+                if (cap.scheduled && cap.scheduled.length) { bodyHtml += `<div style="margin-top:12px"><h4>Scheduled Messages / Deliveries</h4>${cap.scheduled.map(s => `<div class="card"><div class="muted">To: ${s.to || currentUser.email} · On: ${s.on}</div><div>${escapeHtml(s.msg)}</div></div>`).join('')}</div>` }
+                box.querySelector('#modalBody').innerHTML = bodyHtml;
+            }
+
+            modal.appendChild(box); document.body.appendChild(modal);
+            box.querySelector('#closeModal').addEventListener('click', () => modal.remove());
+        }
+
+        function escapeHtml(s) { if (!s) return ''; return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // create share link
+        function createShareFor(capsId) { const shares = store.get('dtc_shares') || {}; const token = uid('share_'); const expires = new Date(); expires.setDate(expires.getDate() + 7); shares[token] = { capsuleId: capsId, expires: expires.toISOString(), owner: currentUser.id }; store.set('dtc_shares', shares); const link = window.location.origin + window.location.pathname + '?share=' + token; prompt('Shareable link (expires in 7 days):', link); }
+
+        // check for share param
+        function checkShareParam() {
+            const p = new URLSearchParams(window.location.search); if (p.get('share')) { const t = p.get('share'); openCapsuleModal(t); }
+        }
+
+        // open scheduled editor
+        function openScheduledEditor(cid) {
+            const caps = store.get('dtc_capsules') || {}; const cap = caps[cid]; if (!cap) return; const modal = document.createElement('div'); modal.style.position = 'fixed'; modal.style.inset = 0; modal.style.background = 'rgba(2,6,23,0.6)'; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center'; const box = document.createElement('div'); box.className = 'card'; box.style.maxWidth = '640px'; box.style.width = '90%'; box.innerHTML = `<div style="display:flex;justify-content:space-between"><div><h3>Edit scheduled</h3><div class="muted">${cap.title}</div></div><div><button id="closeX" class="small-btn">Close</button></div></div><div id="sList"></div><form id="sForm" style="margin-top:12px"><label>Message</label><textarea name="msg" required></textarea><label>Deliver on</label><input name="on" type="date" min="${todayISO()}" required/><label>Deliver to (email)</label><input name="to" type="email" placeholder="optional"/><div style="margin-top:8px"><button>Add scheduled</button></div></form>`;
+            modal.appendChild(box); document.body.appendChild(modal);
+            box.querySelector('#closeX').addEventListener('click', () => modal.remove());
+            const sList = box.querySelector('#sList'); function refresh() { sList.innerHTML = ''; (cap.scheduled || []).forEach((s, idx) => { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = `<div style="display:flex;justify-content:space-between"><div><div class="muted">On ${s.on} · To: ${s.to || 'you'}</div><div>${escapeHtml(s.msg)}</div></div><div><button class="small-btn" data-idx="${idx}">Delete</button></div></div>`; d.querySelector('button').addEventListener('click', () => { cap.scheduled.splice(idx, 1); caps[cid] = cap; store.set('dtc_capsules', caps); refresh(); }); sList.appendChild(d); }); }
+            refresh();
+            box.querySelector('#sForm').addEventListener('submit', (e) => { e.preventDefault(); const fd = new FormData(box.querySelector('#sForm')); const s = { msg: fd.get('msg'), on: fd.get('on'), to: fd.get('to'), delivered: false }; cap.scheduled = cap.scheduled || []; cap.scheduled.push(s); const caps = store.get('dtc_capsules') || {}; caps[cid] = cap; store.set('dtc_capsules', caps); alert('scheduled message saved (demo — delivery simulated while page is open)'); refresh(); });
+        }
+
+        // scheduled messages checker
+        function checkScheduledMessages() {
+            const caps = store.get('dtc_capsules') || {}; const mine = Object.values(caps).filter(c => c.owner === currentUser.id);
+            let changed = false;
+            mine.forEach(c => {
+                (c.scheduled || []).forEach(s => {
+                    if (!s.delivered && new Date(s.on) <= new Date()) {
+                        s.delivered = true; s.deliveredAt = new Date().toISOString(); changed = true; // create a mailto link for user action (cannot auto-send) 
+                        const subj = encodeURIComponent('Scheduled message from your Time Capsule: ' + c.title);
+                        const body = encodeURIComponent(s.msg + "\n\n(Delivered from DigitalTimeCapsule demo)");
+                        // for demo: show an in-app notification and also a prompt with mailto to let user forward
+                        alert('Scheduled message ready to deliver for capsule "' + c.title + '". Use mail client to send or keep local.');
+                        // Optionally open mailto if user agrees
+                        if (confirm('Open mail client to send this scheduled message?')) {
+                            window.location.href = `mailto:${s.to || ''}?subject=${subj}&body=${body}`;
+                        }
+                    }
+                }); if (changed) store.set('dtc_capsules', caps);
+            });
+        }
+
+        // helper to convert files to dataURL
+        function fileToDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }) }
+
+        // import initial render
+        renderApp();
+
+        // utility: simple share-check timer to remove expired shares
+        setInterval(() => { const shares = store.get('dtc_shares') || {}; let changed = false; Object.keys(shares).forEach(k => { if (new Date(shares[k].expires) < new Date()) { delete shares[k]; changed = true } }); if (changed) store.set('dtc_shares', shares); }, 60 * 60 * 1000);
+
+        // check scheduled messages on load (in case some are due right now)
+        setTimeout(checkScheduledMessages, 2000);
+
+    </script>
+</body>
+
+</html>
